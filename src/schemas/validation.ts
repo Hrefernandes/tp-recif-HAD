@@ -1,5 +1,6 @@
 export type Rule = (value: unknown) => string | null;
 export type Schema = Record<string, Rule>;
+import { AppError } from "../errors/app-error.js";
 
 export const text = (min: number, max: number): Rule => (value) =>
   typeof value === "string" && value.trim().length >= min && value.trim().length <= max
@@ -40,4 +41,10 @@ export function validate<T = Record<string, any>>(
     else if (value !== undefined) data[field] = typeof value === "string" ? value.trim() : value;
   }
   return errors.length > 0 ? { ok: false, errors } : { ok: true, data: data as T };
+}
+
+export function parse<T = Record<string, any>>(schema: Schema, input: unknown, options: { partial?: boolean } = {}): T {
+  const result = validate<T>(schema, input, options);
+  if (!result.ok) throw new AppError(400, "VALIDATION_ERROR", result.errors.join(" ; "));
+  return result.data;
 }
